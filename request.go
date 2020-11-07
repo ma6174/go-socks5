@@ -1,13 +1,12 @@
 package socks5
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
 	"strconv"
 	"strings"
-
-	"golang.org/x/net/context"
 )
 
 const (
@@ -118,6 +117,10 @@ func NewRequest(bufConn io.Reader) (*Request, error) {
 // handleRequest is used for request processing after authentication
 func (s *Server) handleRequest(req *Request, conn conn) error {
 	ctx := context.Background()
+	if req.AuthContext != nil {
+		ctx = context.WithValue(ctx,
+			"username", req.AuthContext.Payload["Username"])
+	}
 
 	// Resolve the address if we have a FQDN
 	dest := req.DestAddr
@@ -191,9 +194,12 @@ func (s *Server) handleConnect(ctx context.Context, conn conn, req *Request) err
 	defer target.Close()
 
 	// Send success
-	local := target.LocalAddr().(*net.TCPAddr)
-	bind := AddrSpec{IP: local.IP, Port: local.Port}
-	if err := sendReply(conn, successReply, &bind); err != nil {
+	var bind *AddrSpec
+	local, ok := target.LocalAddr().(*net.TCPAddr)
+	if ok {
+		bind = &AddrSpec{IP: local.IP, Port: local.Port}
+	}
+	if err := sendReply(conn, successReply, bind); err != nil {
 		return fmt.Errorf("Failed to send reply: %v", err)
 	}
 
@@ -359,6 +365,8 @@ func proxy(dst io.Writer, src io.Reader, errCh chan error) {
 	_, err := io.Copy(dst, src)
 	if tcpConn, ok := dst.(closeWriter); ok {
 		tcpConn.CloseWrite()
+	} else if c, ok := dst.(io.Closer); ok {
+		c.Close()
 	}
 	errCh <- err
 }
