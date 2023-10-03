@@ -54,7 +54,7 @@ func (sf *Server) handleRequest(write io.Writer, req *Request) error {
 	ctx := context.Background()
 	if req.AuthContext != nil {
 		ctx = context.WithValue(ctx,
-			"username", req.AuthContext.Payload["Username"])
+			"username", req.AuthContext.Payload["username"])
 	}
 	// Resolve the address if we have a FQDN
 	dest := req.RawDestAddr
