@@ -368,6 +368,8 @@ func (sf *Server) Proxy(dst io.Writer, src io.Reader) error {
 	_, err := io.CopyBuffer(dst, src, buf[:cap(buf)])
 	if tcpConn, ok := dst.(closeWriter); ok {
 		tcpConn.CloseWrite() //nolint: errcheck
+	} else if c, ok := dst.(io.Closer); ok {
+		c.Close() //nolint: errcheck
 	}
 	return err
 }
