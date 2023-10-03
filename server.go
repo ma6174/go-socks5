@@ -1,7 +1,6 @@
 package socks5
 
 import (
-	"bufio"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -132,7 +131,7 @@ func (sf *Server) ServeConn(conn net.Conn) error {
 
 	defer conn.Close() // nolint: errcheck
 
-	bufConn := bufio.NewReader(conn)
+	bufConn := conn
 
 	mr, err := statute.ParseMethodRequest(bufConn)
 	if err != nil {
